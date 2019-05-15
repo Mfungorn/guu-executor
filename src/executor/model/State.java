@@ -1,9 +1,12 @@
 package executor.model;
 
+import executor.exceptions.UnresolvedMethodException;
+import executor.exceptions.UnresolvedVariableException;
+
 import java.util.*;
 
 public class State {
-    private int currentIndex;
+    private int currentPos;
     private Stack<Method> methodStack;
     private Set<Variable> variables;
     private List<Method> methods;
@@ -18,30 +21,37 @@ public class State {
         variables.add(variable);
     }
 
-    public Method findMethodByName(String name) {
+    public Method findMethodByName(String name) throws UnresolvedMethodException {
         return methods.stream()
                 .filter(method -> (method.getName().equals(name)))
                 .findFirst()
-                .orElseThrow();
+                .orElseThrow(UnresolvedMethodException::new);
     }
 
-    public Variable findVariableByName(String name) {
+    public Variable findVariableByName(String name) throws UnresolvedVariableException {
         return variables.stream()
                 .filter(variable -> variable.getName().equals(name))
                 .findFirst()
-                .orElseThrow();
+                .orElse(null);
     }
 
     public void pushMethod(Method method) {
         methodStack.push(method);
     }
 
-    public void popMethod() {
+    public Method popMethod() {
         try {
-            if (!methodStack.peek().getName().equals("main"))
-                methodStack.pop();
+            return methodStack.pop();
         } catch (EmptyStackException e) {
-            // do nothing
+            return null;
+        }
+    }
+
+    public Method peekMethod() {
+        try {
+            return methodStack.peek();
+        } catch (EmptyStackException e) {
+            return null;
         }
     }
 
@@ -57,11 +67,11 @@ public class State {
         return methods;
     }
 
-    public int getCurrentIndex() {
-        return currentIndex;
+    public int getCurrentPos() {
+        return currentPos;
     }
 
-    public void setCurrentIndex(int index) {
-        this.currentIndex = index;
+    public void setCurrentPos(int index) {
+        this.currentPos = index;
     }
 }
