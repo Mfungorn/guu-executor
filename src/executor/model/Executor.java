@@ -15,7 +15,6 @@ public class Executor {
     private final String SET_TOKEN = "set";
 
     private int executePos;
-    private int callPos = -1;
 
     private List<String> instructions;
     private State state = new State();
@@ -26,15 +25,17 @@ public class Executor {
 
     public Executor(String program) {
         String instruction;
-        //instructions = new LinkedList<>(Arrays.asList(program.split("\n")));
-        instructions = Stream.of(program.split("\n")).map(String::trim).collect(Collectors.toList());
+        instructions = Stream.of(program.split("\n"))
+                .map(String::trim)
+                .collect(Collectors.toList());
         for (int i = 0; i < instructions.size(); i++) {
             instruction = instructions.get(i);
             if (instruction.startsWith(SUB_TOKEN))
-                state.getMethods().add(
-                        new Method(i, instruction.substring(instruction.lastIndexOf(INSTRUCTION_DELIMITER) + 1))
+                state.getMethods()
+                        .add(new Method(i, instruction.substring(instruction.lastIndexOf(INSTRUCTION_DELIMITER) + 1))
                 );
         }
+        state.setCurrentPos(executePos);
     }
 
     public void handle(boolean isStepInto) throws UnresolvedVariableException, UnresolvedMethodException {
@@ -60,9 +61,9 @@ public class Executor {
                             }
                         }
                     }
+                    state.setFinish(true);
                 }
             } else {
-                //instruction = instructions.get(executePos);
                 execute(instruction);
                 if (instruction.startsWith(CALL_TOKEN)) {
                     state.setCurrentPos(executePos);
@@ -72,7 +73,10 @@ public class Executor {
                     state.popMethod();
                     if (state.peekMethod() != null) {
                         executePos = state.peekMethod().getPrevPos() + 1;
-                    } else return;
+                    } else {
+                        state.setFinish(true);
+                        return;
+                    }
                 }
                 state.setCurrentPos(executePos);
             }
@@ -94,6 +98,7 @@ public class Executor {
                 break;
             case PRINT_TOKEN:
                 var = state.findVariableByName(tokens[1]);
+                if (var == null) throw new UnresolvedVariableException();
                 System.out.println(var);
                 executePos++;
                 break;
@@ -103,7 +108,6 @@ public class Executor {
                 executePos++;
                 break;
             case CALL_TOKEN:
-                //callPos = executePos;
                 if (state.peekMethod() != null) {
                     state.peekMethod().setPrevPos(executePos);
                 }

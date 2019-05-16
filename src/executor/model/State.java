@@ -10,6 +10,7 @@ public class State {
     private Stack<Method> methodStack;
     private Set<Variable> variables;
     private List<Method> methods;
+    private boolean isFinish;
 
     public State() {
         this.methodStack = new Stack<>();
@@ -73,5 +74,13 @@ public class State {
 
     public void setCurrentPos(int index) {
         this.currentPos = index;
+    }
+
+    public boolean isFinish() {
+        return isFinish;
+    }
+
+    public void setFinish(boolean finish) {
+        isFinish = finish;
     }
 }
