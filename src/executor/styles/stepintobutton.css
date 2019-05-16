@@ -1,0 +1,21 @@
+.button {
+    -fx-background-image: url('../assets/stepinto.png');
+    -fx-background-repeat: no-repeat;
+    -fx-background-color:transparent;
+    -fx-background-radius:0;
+    -fx-border-width: 0;
+}
+.button:hover {
+    -fx-background-image: url('../assets/stepinto.png');
+    -fx-background-repeat: no-repeat;
+    -fx-background-color:transparent;
+    -fx-background-radius:0;
+    -fx-border-width: 0;
+}
+.button:pressed {
+    -fx-background-image: url('../assets/stepintopressed.png');
+    -fx-background-repeat: no-repeat;
+    -fx-background-color:transparent;
+    -fx-background-radius:0;
+    -fx-border-width: 0;
+}

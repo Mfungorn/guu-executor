@@ -1,0 +1,20 @@
+.menu-bar {
+    -fx-background-color: #263238;
+    -fx-opacity: 0.5;
+}
+
+.menu-bar .menu-button:hover, .menu-bar .menu-button:focused, .menu-bar .menu-button:showing {
+    -fx-background-color: #263238;
+    -fx-opacity: 0.5;
+    -fx-text-fill: -fx-selection-bar-text;
+}
+
+.menu-item {
+    -fx-background-color: #263238;
+    -fx-padding: 0em 0em 0em 0em;
+}
+
+.menu .label {
+    -fx-opacity: 0.5;
+    -fx-text-fill: #F8F8F8;
+}
