@@ -24,4 +24,9 @@ public class Method {
     public void setPrevPos(int prevPos) {
         this.prevPos = prevPos;
     }
+
+    @Override
+    public String toString() {
+        return name;
+    }
 }

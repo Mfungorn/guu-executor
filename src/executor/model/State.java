@@ -1,35 +1,43 @@
 package executor.model;
 
+import executor.controllers.Observer;
 import executor.exceptions.UnresolvedMethodException;
-import executor.exceptions.UnresolvedVariableException;
 
 import java.util.*;
 
-public class State {
+public class State implements Observable {
     private int currentPos;
     private Stack<Method> methodStack;
-    private Set<Variable> variables;
+    private List<Variable> variables;
     private List<Method> methods;
-    private boolean isFinish;
+
+    private Set<Observer> observers;
 
     public State() {
         this.methodStack = new Stack<>();
-        this.variables = new HashSet<>();
+        this.variables = new LinkedList<>();
         this.methods = new LinkedList<>();
+        this.observers = new HashSet<>();
     }
 
     public void addVariable(Variable variable) {
         variables.add(variable);
+        notifyHasChanges(variables);
+    }
+
+    public void setVariable(Variable variable, int value) {
+        variables.get(variables.indexOf(variable)).setValue(value);
+        notifyHasChanges(variables);
     }
 
     public Method findMethodByName(String name) throws UnresolvedMethodException {
         return methods.stream()
                 .filter(method -> (method.getName().equals(name)))
                 .findFirst()
-                .orElseThrow(UnresolvedMethodException::new);
+                .orElseThrow(() -> new UnresolvedMethodException(name));
     }
 
-    public Variable findVariableByName(String name) throws UnresolvedVariableException {
+    public Variable findVariableByName(String name) {
         return variables.stream()
                 .filter(variable -> variable.getName().equals(name))
                 .findFirst()
@@ -38,12 +46,16 @@ public class State {
 
     public void pushMethod(Method method) {
         methodStack.push(method);
+        notifyHasChanges(methodStack);
     }
 
     public Method popMethod() {
         try {
-            return methodStack.pop();
+            Method method = methodStack.pop();
+            notifyHasChanges(methodStack);
+            return method;
         } catch (EmptyStackException e) {
+            notifyHasChanges(methodStack);
             return null;
         }
     }
@@ -60,7 +72,7 @@ public class State {
         return methodStack;
     }
 
-    public Set<Variable> getVariables() {
+    public List<Variable> getVariables() {
         return variables;
     }
 
@@ -77,10 +89,33 @@ public class State {
     }
 
     public boolean isFinish() {
-        return isFinish;
+        return methodStack.isEmpty();
     }
 
-    public void setFinish(boolean finish) {
-        isFinish = finish;
+    @Override
+    public void addObserver(Observer observer) {
+        observers.add(observer);
     }
+
+    @Override
+    public void deleteObserver(Observer observer) {
+        observers.remove(observer);
+    }
+
+    @Override
+    public void notifyHasChanges(Stack<Method> methodStackChanged) {
+        observers.forEach(o -> o.update(methodStackChanged));
+    }
+
+    @Override
+    public void notifyHasChanges(List<Variable> variablesChanged) {
+        observers.forEach(o -> o.update(variablesChanged));
+    }
+
+    @Override
+    public void notifyHasChanges(String resultsChanges) {
+        observers.forEach(o -> o.update(resultsChanges));
+    }
+
+
 }

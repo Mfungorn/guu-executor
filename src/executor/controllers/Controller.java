@@ -3,10 +3,15 @@ package executor.controllers;
 import executor.exceptions.UnresolvedMethodException;
 import executor.exceptions.UnresolvedVariableException;
 import executor.model.Executor;
+import executor.model.Method;
+import executor.model.Variable;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.TextFieldListCell;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 
@@ -15,10 +20,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Stack;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Controller {
+public class Controller implements Observer {
     private Executor executor;
     private String program;
     private ObservableList<String> lines;
@@ -28,93 +34,152 @@ public class Controller {
     @FXML private VBox container;
     @FXML private TextArea outputArea;
     @FXML private Button startButton, stopButton, stepOverButton, stepIntoButton;
-    @FXML private ListView inputLines, methodStack, variablesList;
-    @FXML private MenuItem openFileMenuItem, closeFileMenuItem, aboutHelpMenuItem;
+    @FXML private ListView<String> inputLines, methodStack, variablesList;
+    @FXML private MenuItem openFileMenuItem, closeFileMenuItem, clearMenuItem, aboutHelpMenuItem;
 
     @FXML
     public void initialize() {
         fileChooser = new FileChooser();
         openFileMenuItem.setOnAction(e -> {
-            inputLines.getItems().clear();
-            StringBuffer stringBuffer = new StringBuffer();
             File file = fileChooser.showOpenDialog(container.getScene().getWindow());
             if (file != null) {
-                try (Stream<String> lines = Files.lines(Paths.get(file.getAbsolutePath()))) {
-                    this.lines = FXCollections.observableList(lines.map(l -> l + "\n").collect(Collectors.toList()));
-                    this.lines.forEach(stringBuffer::append);
-                    program = stringBuffer.toString();
-                    inputLines.setItems(this.lines);
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
+                readFile(file);
             }
         });
-        closeFileMenuItem.setOnAction(e -> inputLines.getItems().clear());
 
-        stopButton.setDisable(true);
-        stepIntoButton.setDisable(true);
-        stepOverButton.setDisable(true);
+        clearMenuItem.setOnAction(e -> clearInput());
+        closeFileMenuItem.setOnAction(e -> clearInput());
+
+        initInput();
+        disableButtons(true);
 
         startButton.setOnMouseClicked(e -> {
+            clearResults();
             executor = new Executor(program);
+            executor.getState().addObserver(this);
             inputLines.scrollTo(executor.getState().getCurrentPos());
             inputLines.getSelectionModel().select(executor.getState().getCurrentPos());
-            startButton.setDisable(true);
-            stopButton.setDisable(false);
-            stepIntoButton.setDisable(false);
-            stepOverButton.setDisable(false);
+            disableButtons(false);
         });
 
         stopButton.setOnMouseClicked(e -> {
+            executor.getState().deleteObserver(this);
             executor = null;
-            startButton.setDisable(false);
-            stopButton.setDisable(true);
-            stepIntoButton.setDisable(true);
-            stepOverButton.setDisable(true);
+            disableButtons(true);
         });
 
-        stepIntoButton.setOnMouseClicked(e -> {
-            try {
-                executor.handle(true);
-                inputLines.scrollTo(executor.getState().getCurrentPos());
-                inputLines.getSelectionModel().select(executor.getState().getCurrentPos());
-            } catch (UnresolvedVariableException ex) {
-                alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Error");
-                alert.setContentText("Uninitialized variable!");
+        stepIntoButton.setOnMouseClicked(getStepButtonHandler(true));
+        stepOverButton.setOnMouseClicked(getStepButtonHandler(false));
+    }
 
-                alert.showAndWait();
-            } catch (UnresolvedMethodException ex) {
-                alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Error");
-                alert.setContentText("Unresolved method call!");
-
-                alert.showAndWait();
+    private void initInput() {
+        inputLines.setEditable(true);
+        inputLines.setCellFactory(TextFieldListCell.forListView());
+        inputLines.setOnMouseClicked(event -> {
+            int idx = inputLines.getSelectionModel().getSelectedIndex();
+            if (idx == -1) {
+                inputLines.getItems().add("");
+                inputLines.getSelectionModel().select(inputLines.getItems().indexOf(""));
             }
-
-            //methodStack.getItems().add(0, );
+            inputLines.edit(idx);
         });
-
-        stepOverButton.setOnMouseClicked(e -> {
-            try {
-                executor.handle(false);
-                inputLines.scrollTo(executor.getState().getCurrentPos());
-                inputLines.getSelectionModel().select(executor.getState().getCurrentPos());
-            } catch (UnresolvedVariableException ex) {
-                alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Error");
-                alert.setContentText("Uninitialized variable!");
-
-                alert.showAndWait();
-            } catch (UnresolvedMethodException ex) {
-                alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Error");
-                alert.setContentText("Unresolved method call!");
-
-                alert.showAndWait();
-            }
-
+        inputLines.setOnEditCommit(t -> {
+            inputLines.getItems().set(t.getIndex(), t.getNewValue());
+            if (inputLines.getItems().get(t.getIndex()).isEmpty())
+                inputLines.getItems().remove(t.getIndex());
+            if (!inputLines.getItems().get(t.getIndex()).contains("\n"))
+                inputLines.getItems().set(t.getIndex(), t.getNewValue() + "\n");
+            inputLines.getSelectionModel().clearSelection();
+            StringBuilder stringBuilder = new StringBuilder();
+            inputLines.getItems().forEach(stringBuilder::append);
+            program = stringBuilder.toString();
         });
     }
 
+    private void readFile(File file) {
+        StringBuilder stringBuilder = new StringBuilder();
+        try (Stream<String> lines = Files.lines(Paths.get(file.getAbsolutePath()))) {
+            this.lines = FXCollections.observableList(lines.map(l -> l + "\n").collect(Collectors.toList()));
+            this.lines.forEach(stringBuilder::append);
+            program = stringBuilder.toString();
+            inputLines.getItems().clear();
+            inputLines.setItems(this.lines);
+        } catch (IOException ex) {
+            alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("I/O Exception");
+            alert.setContentText("Cannot read the file " + file.getAbsolutePath());
+
+            alert.showAndWait();
+            ex.printStackTrace();
+        }
+    }
+
+    private EventHandler<MouseEvent> getStepButtonHandler(boolean isStepInto) {
+        return event -> {
+            try {
+                executor.handle(isStepInto);
+                inputLines.scrollTo(executor.getState().getCurrentPos());
+                inputLines.getSelectionModel().select(executor.getState().getCurrentPos());
+            } catch (UnresolvedVariableException ex) {
+                alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Runtime Error");
+                alert.setContentText("Uninitialized variable: " + ex.getMessage());
+
+                alert.showAndWait();
+            } catch (UnresolvedMethodException ex) {
+                alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Runtime Error");
+                alert.setContentText("Unresolved method call: " + ex.getMessage());
+
+                alert.showAndWait();
+            }
+            if (executor.getState().isFinish()) {
+                disableButtons(true);
+                inputLines.getSelectionModel().clearSelection();
+            }
+        };
+    }
+
+    private void disableButtons(boolean isDisable) {
+        startButton.setDisable(!isDisable);
+        stopButton.setDisable(isDisable);
+        stepIntoButton.setDisable(isDisable);
+        stepOverButton.setDisable(isDisable);
+    }
+
+    private void clearInput() {
+        inputLines.getItems().clear();
+        methodStack.getItems().clear();
+        variablesList.getItems().clear();
+        outputArea.clear();
+    }
+
+    private void clearResults() {
+        methodStack.getItems().clear();
+        variablesList.getItems().clear();
+        outputArea.clear();
+    }
+
+    @Override
+    public void update(String results) {
+        outputArea.appendText(results + "\n");
+    }
+
+    @Override
+    public void update(List<Variable> variables) {
+            variablesList.getItems().clear();
+            variablesList.getItems().addAll(variables.stream()
+                    .map(Variable::toString)
+                    .collect(Collectors.toList())
+            );
+    }
+
+    @Override
+    public void update(Stack<Method> methodStack) {
+        this.methodStack.getItems().clear();
+        this.methodStack.getItems().addAll(methodStack.stream()
+                .map(Method::toString)
+                .collect(Collectors.toList())
+        );
+    }
 }

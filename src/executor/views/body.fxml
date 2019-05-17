@@ -20,6 +20,11 @@
               <MenuItem fx:id="closeFileMenuItem" mnemonicParsing="false" text="Close" />
             </items>
           </Menu>
+           <Menu fx:id="editMenu" mnemonicParsing="false" text="Edit">
+              <items>
+                 <MenuItem fx:id="clearMenuItem" mnemonicParsing="false" text="Clear" />
+              </items>
+           </Menu>
           <Menu mnemonicParsing="false" text="Help">
             <items>
               <MenuItem fx:id="aboutHelpMenuItem" mnemonicParsing="false" text="About" />
@@ -79,7 +84,7 @@
                   <Insets left="5.0" />
                </HBox.margin>
             </ListView>
-            <TextArea fx:id="outputArea" editable="false" prefHeight="131.0" prefWidth="389.0" style="-fx-background-radius: 0; -fx-border-color: #2A373E;" stylesheets="@../styles/textarea.css">
+            <TextArea fx:id="outputArea" prefHeight="131.0" prefWidth="389.0" editable="false" style="-fx-background-radius: 0; -fx-border-color: #2A373E;" stylesheets="@../styles/textarea.css">
                <HBox.margin>
                   <Insets left="5.0" />
                </HBox.margin>

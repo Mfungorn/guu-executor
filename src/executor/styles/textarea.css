@@ -1,21 +1,23 @@
 .text-area {
     -fx-text-fill: #A9B7C6;
-    -fx-highlight-fill: #7ecfff;
+    -fx-highlight-fill: #214283;
     -fx-background-insets: 0;
     text-area-background: #1F242A;
     -fx-background-color: transparent, text-area-background, transparent, text-area-background;
 }
 
 .text-area:focused {
-    -fx-highlight-fill: #7ecfff;
+    -fx-highlight-fill: #214283;
 }
 
 .text-area .content {
     -fx-background-color: text-area-background;
     -fx-text-fill: #A9B7C6;
-    -fx-highlight-fill: #7ecfff;
+    -fx-highlight-fill: #214283;
 }
 
 .text-area:focused .content {
     -fx-background-color: transparent, text-area-background, transparent, text-area-background;
+    -fx-text-fill: #A9B7C6;
+    -fx-highlight-fill: #214283;
 }

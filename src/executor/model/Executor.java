@@ -61,7 +61,6 @@ public class Executor {
                             }
                         }
                     }
-                    state.setFinish(true);
                 }
             } else {
                 execute(instruction);
@@ -74,7 +73,6 @@ public class Executor {
                     if (state.peekMethod() != null) {
                         executePos = state.peekMethod().getPrevPos() + 1;
                     } else {
-                        state.setFinish(true);
                         return;
                     }
                 }
@@ -93,13 +91,15 @@ public class Executor {
                 if (var == null)
                     state.addVariable(new Variable(tokens[1], Integer.parseInt(tokens[2])));
                 else
-                    var.setValue(Integer.parseInt(tokens[2]));
+                    state.setVariable(var, Integer.parseInt(tokens[2]));
+                    //var.setValue(Integer.parseInt(tokens[2]));
                 executePos++;
                 break;
             case PRINT_TOKEN:
                 var = state.findVariableByName(tokens[1]);
-                if (var == null) throw new UnresolvedVariableException();
+                if (var == null) throw new UnresolvedVariableException(tokens[1]);
                 System.out.println(var);
+                state.notifyHasChanges(var.toString());
                 executePos++;
                 break;
             case SUB_TOKEN:
