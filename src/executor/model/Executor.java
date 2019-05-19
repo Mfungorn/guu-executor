@@ -2,6 +2,7 @@ package executor.model;
 
 import executor.exceptions.UnresolvedMethodException;
 import executor.exceptions.UnresolvedVariableException;
+import executor.model.instructions.InstructionBuilder;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -17,13 +18,14 @@ public class Executor {
     private int executePos;
 
     private List<String> instructions;
-    private State state = new State();
+    private State state;
 
     public State getState() {
         return state;
     }
 
     public Executor(String program) {
+        state = new State(this);
         String instruction;
         instructions = Stream.of(program.split("\n"))
                 .map(String::trim)
@@ -38,7 +40,8 @@ public class Executor {
         state.setCurrentPos(executePos);
     }
 
-    public void handle(boolean isStepInto) throws UnresolvedVariableException, UnresolvedMethodException {
+    public void handle(boolean isStepInto) throws UnresolvedVariableException, UnresolvedMethodException,
+            UnsupportedOperationException {
         if (executePos < instructions.size()) {
             String instruction = instructions.get(executePos);
 
@@ -83,39 +86,29 @@ public class Executor {
 
     private void execute(final String instruction) throws UnresolvedVariableException, UnresolvedMethodException {
         String[] tokens = instruction.split(INSTRUCTION_DELIMITER);
-        Variable var;
-        Method method;
         switch (tokens[0]) {
             case SET_TOKEN:
-                var = state.findVariableByName(tokens[1]);
-                if (var == null)
-                    state.addVariable(new Variable(tokens[1], Integer.parseInt(tokens[2])));
-                else
-                    state.setVariable(var, Integer.parseInt(tokens[2]));
-                    //var.setValue(Integer.parseInt(tokens[2]));
-                executePos++;
+                InstructionBuilder.buildSetInstruction(state).execute(tokens[1], tokens[2]);
                 break;
             case PRINT_TOKEN:
-                var = state.findVariableByName(tokens[1]);
-                if (var == null) throw new UnresolvedVariableException(tokens[1]);
-                System.out.println(var);
-                state.notifyHasChanges(var.toString());
-                executePos++;
+                InstructionBuilder.buildPrintInstruction(state).execute(tokens[1]);
                 break;
             case SUB_TOKEN:
-                method = state.findMethodByName(tokens[1]);
-                state.pushMethod(method);
-                executePos++;
+                InstructionBuilder.buildSubInstruction(state).execute(tokens[1]);
                 break;
             case CALL_TOKEN:
-                if (state.peekMethod() != null) {
-                    state.peekMethod().setPrevPos(executePos);
-                }
-                method = state.findMethodByName(tokens[1]);
-                executePos = method.getPos();
+                InstructionBuilder.buildCallInstruction(state).execute(tokens[1]);
                 return;
             default:
                 throw new UnsupportedOperationException();
         }
+    }
+
+    public int getExecutePos() {
+        return executePos;
+    }
+
+    public void setExecutePos(int executePos) {
+        this.executePos = executePos;
     }
 }

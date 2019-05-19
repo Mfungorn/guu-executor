@@ -30,7 +30,6 @@ public class Controller implements Observer {
     private ObservableList<String> lines;
     private FileChooser fileChooser;
 
-    private Alert alert;
     @FXML private VBox container;
     @FXML private TextArea outputArea;
     @FXML private Button startButton, stopButton, stepOverButton, stepIntoButton;
@@ -105,11 +104,7 @@ public class Controller implements Observer {
             inputLines.getItems().clear();
             inputLines.setItems(this.lines);
         } catch (IOException ex) {
-            alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("I/O Exception");
-            alert.setContentText("Cannot read the file " + file.getAbsolutePath());
-
-            alert.showAndWait();
+            showErrorDialog("I/O Exception", "Cannot read the file " + file.getAbsolutePath());
             ex.printStackTrace();
         }
     }
@@ -121,23 +116,25 @@ public class Controller implements Observer {
                 inputLines.scrollTo(executor.getState().getCurrentPos());
                 inputLines.getSelectionModel().select(executor.getState().getCurrentPos());
             } catch (UnresolvedVariableException ex) {
-                alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Runtime Error");
-                alert.setContentText("Uninitialized variable: " + ex.getMessage());
-
-                alert.showAndWait();
+                showErrorDialog("Runtime Error", "Uninitialized variable: " + ex.getMessage());
             } catch (UnresolvedMethodException ex) {
-                alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Runtime Error");
-                alert.setContentText("Unresolved method call: " + ex.getMessage());
-
-                alert.showAndWait();
+                showErrorDialog("Runtime Error", "Unresolved method call: " + ex.getMessage());
+            } catch (UnsupportedOperationException ex) {
+                showErrorDialog("Runtime Error", "Unsupported instruction: " + ex.getMessage());
             }
             if (executor.getState().isFinish()) {
                 disableButtons(true);
                 inputLines.getSelectionModel().clearSelection();
             }
         };
+    }
+
+    private void showErrorDialog(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setContentText(message);
+
+        alert.showAndWait();
     }
 
     private void disableButtons(boolean isDisable) {
