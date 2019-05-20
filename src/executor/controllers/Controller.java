@@ -61,6 +61,8 @@ public class Controller implements Observer {
                 inputLines.scrollTo(executor.getState().getCurrentPos());
                 inputLines.getSelectionModel().select(executor.getState().getCurrentPos());
                 disableButtons(false);
+            } catch (IllegalArgumentException ex) {
+                showErrorDialog("Compilation error", ex.getMessage());
             } catch (Exception ex) {
                 showErrorDialog("Internal program exception", ex.getMessage());
                 clearResults();
@@ -131,6 +133,7 @@ public class Controller implements Observer {
                 showErrorDialog("Runtime Error", "Infinite " + ex.getMessage());
             } catch (Exception ex) {
                 showErrorDialog("Internal program exception", ex.getMessage());
+                clearResults();
             }
             if (executor.getState().isFinish()) {
                 disableButtons(true);
