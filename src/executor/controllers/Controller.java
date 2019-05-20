@@ -1,5 +1,6 @@
 package executor.controllers;
 
+import executor.exceptions.InfiniteCallException;
 import executor.exceptions.UnresolvedMethodException;
 import executor.exceptions.UnresolvedVariableException;
 import executor.model.Executor;
@@ -53,12 +54,17 @@ public class Controller implements Observer {
         disableButtons(true);
 
         startButton.setOnMouseClicked(e -> {
-            clearResults();
-            executor = new Executor(program);
-            executor.getState().addObserver(this);
-            inputLines.scrollTo(executor.getState().getCurrentPos());
-            inputLines.getSelectionModel().select(executor.getState().getCurrentPos());
-            disableButtons(false);
+            try {
+                clearResults();
+                executor = new Executor(program);
+                executor.getState().addObserver(this);
+                inputLines.scrollTo(executor.getState().getCurrentPos());
+                inputLines.getSelectionModel().select(executor.getState().getCurrentPos());
+                disableButtons(false);
+            } catch (Exception ex) {
+                showErrorDialog("Internal program exception", ex.getMessage());
+                clearResults();
+            }
         });
 
         stopButton.setOnMouseClicked(e -> {
@@ -121,6 +127,10 @@ public class Controller implements Observer {
                 showErrorDialog("Runtime Error", "Unresolved method call: " + ex.getMessage());
             } catch (UnsupportedOperationException ex) {
                 showErrorDialog("Runtime Error", "Unsupported instruction: " + ex.getMessage());
+            } catch (InfiniteCallException ex) {
+                showErrorDialog("Runtime Error", "Infinite " + ex.getMessage());
+            } catch (Exception ex) {
+                showErrorDialog("Internal program exception", ex.getMessage());
             }
             if (executor.getState().isFinish()) {
                 disableButtons(true);

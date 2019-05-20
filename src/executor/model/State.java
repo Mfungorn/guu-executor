@@ -8,13 +8,13 @@ import java.util.*;
 
 public class State implements Observable {
     private int currentPos;
-    private Stack<Method> methodStack;
-    private List<Variable> variables;
-    private List<Method> methods;
-    private String result;
+    private final Stack<Method> methodStack;
+    private final List<Variable> variables;
+    private final List<Method> methods;
+    private String result = "";
 
-    private Set<Observer> observers;
-    private Executor executor;
+    private final Set<Observer> observers;
+    private final Executor executor;
 
     public State(Executor executor) {
         this.methodStack = new Stack<>();
@@ -111,7 +111,7 @@ public class State implements Observable {
     }
 
     public void addToResult(String result) {
-        this.result = this.result + "\n" + result;
+        this.result = this.result + result + "\n";
         notifyHasChanges(result);
     }
 

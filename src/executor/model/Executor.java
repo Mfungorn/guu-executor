@@ -1,5 +1,6 @@
 package executor.model;
 
+import executor.exceptions.InfiniteCallException;
 import executor.exceptions.UnresolvedMethodException;
 import executor.exceptions.UnresolvedVariableException;
 import executor.model.instructions.InstructionBuilder;
@@ -18,7 +19,8 @@ public class Executor {
     private int executePos;
 
     private List<String> instructions;
-    private State state;
+    private String instruction;
+    private final State state;
 
     public State getState() {
         return state;
@@ -30,6 +32,7 @@ public class Executor {
         instructions = Stream.of(program.split("\n"))
                 .map(String::trim)
                 .collect(Collectors.toList());
+        if (instructions.isEmpty() || program.isEmpty()) throw new IllegalArgumentException("Empty program");
         for (int i = 0; i < instructions.size(); i++) {
             instruction = instructions.get(i);
             if (instruction.startsWith(SUB_TOKEN))
@@ -41,50 +44,53 @@ public class Executor {
     }
 
     public void handle(boolean isStepInto) throws UnresolvedVariableException, UnresolvedMethodException,
-            UnsupportedOperationException {
-        if (executePos < instructions.size()) {
-            String instruction = instructions.get(executePos);
+            UnsupportedOperationException, InfiniteCallException {
 
-            if (instruction.startsWith(SUB_TOKEN)) {
-                execute(instruction);
-                if (isStepInto) {
-                    state.setCurrentPos(executePos);
-                } else {
-                    while (!state.getMethodStack().empty()) {
-                        instruction = instructions.get(executePos);
-                        execute(instruction);
-                        if (instruction.startsWith(CALL_TOKEN)) {
-                            state.setCurrentPos(executePos);
-                            break;
-                        }
-                        if (executePos >= instructions.size() || instructions.get(executePos).startsWith(SUB_TOKEN)) {
-                            state.popMethod();
-                            if (state.peekMethod() != null) {
-                                executePos = state.peekMethod().getPrevPos() + 1;
-                            }
-                        }
-                    }
-                }
-            } else {
-                execute(instruction);
-                if (instruction.startsWith(CALL_TOKEN)) {
-                    state.setCurrentPos(executePos);
-                    return;
-                }
+        if (isStepInto) {
+            instruction = instructions.get(executePos);
+            execute(instruction);
+            System.out.println(instruction);
+            if (!instruction.startsWith(CALL_TOKEN)) {
+                executePos++;
                 if (executePos >= instructions.size() || instructions.get(executePos).startsWith(SUB_TOKEN)) {
                     state.popMethod();
-                    if (state.peekMethod() != null) {
-                        executePos = state.peekMethod().getPrevPos() + 1;
-                    } else {
-                        return;
-                    }
+                    if (state.peekMethod() != null)
+                        executePos = state.peekMethod().getCallPos() + 1;
                 }
-                state.setCurrentPos(executePos);
             }
+
+            state.setCurrentPos(executePos);
+        } else {
+            if (state.peekMethod() == null)
+                executeOver(state.getCurrentPos(), state.getMethods().get(0));
+            else
+                executeOver(state.getCurrentPos(), state.peekMethod());
         }
     }
 
-    private void execute(final String instruction) throws UnresolvedVariableException, UnresolvedMethodException {
+    private void executeOver(int startPos, Method context) throws UnresolvedVariableException,
+            UnresolvedMethodException, InfiniteCallException {
+        //String instruction;
+        executePos = startPos;
+        do {
+            instruction = instructions.get(executePos);
+            execute(instruction);
+            System.out.println(instruction);
+            if (context.getCallPos() != 0 && instruction.startsWith(CALL_TOKEN)) {
+                instruction = instructions.get(executePos);
+                execute(instruction);
+                System.out.println(instruction);
+                executeOver(executePos + 1, state.peekMethod());
+                executePos = context.getCallPos() + 1;
+            } else {
+                executePos++;
+            }
+        } while (executePos < instructions.size() && !instructions.get(executePos).startsWith(SUB_TOKEN));
+        state.popMethod();
+    }
+
+    private void execute(final String instruction) throws UnresolvedVariableException, UnresolvedMethodException,
+            InfiniteCallException {
         String[] tokens = instruction.split(INSTRUCTION_DELIMITER);
         switch (tokens[0]) {
             case SET_TOKEN:

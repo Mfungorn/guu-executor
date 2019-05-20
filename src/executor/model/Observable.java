@@ -5,7 +5,7 @@ import executor.controllers.Observer;
 import java.util.List;
 import java.util.Stack;
 
-public interface Observable {
+interface Observable {
     void addObserver(Observer observer);
     void deleteObserver(Observer observer);
     void notifyHasChanges(Stack<Method> methodStackChanged);

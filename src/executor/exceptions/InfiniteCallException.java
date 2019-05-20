@@ -1,8 +1,8 @@
 package executor.exceptions;
 
-public class UnresolvedMethodException extends Exception {
+public class InfiniteCallException extends Exception {
     private final String message;
-    public UnresolvedMethodException(String methodName) {
+    public InfiniteCallException(String methodName) {
         this.message = methodName;
     }
 

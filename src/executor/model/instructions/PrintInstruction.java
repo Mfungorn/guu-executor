@@ -5,7 +5,7 @@ import executor.model.State;
 import executor.model.Variable;
 
 public class PrintInstruction implements Instruction {
-    private State state;
+    private final State state;
 
     PrintInstruction(State state) {
         this.state = state;
@@ -17,6 +17,6 @@ public class PrintInstruction implements Instruction {
         if (var == null) throw new UnresolvedVariableException(params[0]);
         System.out.println(var);
         state.addToResult(var.toString());
-        state.getExecutor().setExecutePos(state.getExecutor().getExecutePos() + 1);
+        //state.getExecutor().setExecutePos(state.getExecutor().getExecutePos() + 1);
     }
 }

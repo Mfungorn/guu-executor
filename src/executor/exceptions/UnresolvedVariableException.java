@@ -1,7 +1,7 @@
 package executor.exceptions;
 
-public class UnresolvedVariableException extends NoSuchFieldException {
-    private String message;
+public class UnresolvedVariableException extends Exception {
+    private final String message;
 
     public UnresolvedVariableException(String varName) {
         this.message = varName;

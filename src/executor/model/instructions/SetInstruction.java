@@ -1,13 +1,11 @@
 package executor.model.instructions;
 
-import executor.exceptions.UnresolvedMethodException;
 import executor.exceptions.UnresolvedVariableException;
-import executor.model.Method;
 import executor.model.State;
 import executor.model.Variable;
 
 public class SetInstruction implements Instruction {
-    private State state;
+    private final State state;
 
     SetInstruction(State state) {
         this.state = state;
@@ -20,6 +18,6 @@ public class SetInstruction implements Instruction {
             state.addVariable(new Variable(params[0], Integer.parseInt(params[1])));
         else
             state.setVariable(var, Integer.parseInt(params[1]));
-        state.getExecutor().setExecutePos(state.getExecutor().getExecutePos() + 1);
+        //state.getExecutor().setExecutePos(state.getExecutor().getExecutePos() + 1);
     }
 }
